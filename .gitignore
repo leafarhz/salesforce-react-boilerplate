@@ -1,0 +1,17 @@
+# Node / build
+node_modules/
+dist/
+build/
+*.log
+
+# Salesforce
+.sf/
+.sfdx/
+.localdevserver/
+*.tmp
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
