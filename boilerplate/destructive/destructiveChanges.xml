@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Use this to delete a CustomApplication from an org before recreating it.
+  Required when you need to add/change the <uiBundle> field (creation-only).
+  REPLACE: MyApp → your CustomApplication API name.
+
+  Command:
+    sf project deploy start \
+      --manifest destructive/package.xml \
+      --post-destructive-changes destructive/destructiveChanges.xml \
+      --target-org <alias>
+-->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>MyApp</members>
+        <name>CustomApplication</name>
+    </types>
+    <version>67.0</version>
+</Package>

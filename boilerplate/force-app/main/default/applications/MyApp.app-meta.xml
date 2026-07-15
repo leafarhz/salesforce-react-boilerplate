@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  REPLACE: MyApp → your UIBundle DeveloperName (must match uibundle-meta.xml exactly, case-sensitive)
+  REPLACE: My App Label → human-readable label shown in App Launcher
+
+  CRITICAL: Deploy this file only ONCE as a CREATE.
+  The <uiBundle> field is creation-only — Salesforce silently strips it on updates.
+  If you need to change it: delete from org first, then redeploy fresh.
+  See DEPLOY.md for the destructive delete procedure.
+-->
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Describe your app here.</description>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>My App Label</label>
+    <navType>Standard</navType>
+    <uiBundle>c__MyApp</uiBundle>
+    <uiType>Lightning</uiType>
+</CustomApplication>
