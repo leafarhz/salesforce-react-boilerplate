@@ -6,7 +6,7 @@
   CRITICAL: Deploy this file only ONCE as a CREATE.
   The <uiBundle> field is creation-only — Salesforce silently strips it on updates.
   If you need to change it: delete from org first, then redeploy fresh.
-  See DEPLOY.md for the destructive delete procedure.
+  See README.md → 'How to Re-deploy the CustomApplication' for the destructive delete procedure.
 -->
 <CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
     <description>Describe your app here.</description>

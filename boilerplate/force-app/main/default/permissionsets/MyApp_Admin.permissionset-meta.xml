@@ -23,7 +23,7 @@
 
     <!-- 2. Apex class access -->
     <classAccesses>
-        <apexClass>MyAppController</apexClass>
+        <apexClass>MyAppSyncQueueable</apexClass>
         <enabled>true</enabled>
     </classAccesses>
 

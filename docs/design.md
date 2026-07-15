@@ -40,7 +40,7 @@ salesforce-react-boilerplate/
 │       └── references/
 │           ├── deployment-runbook.md # ordered 7-step deploy
 │           ├── gotchas.md            # the gotchas, symptom-indexed
-│           └── visibility-chain.md   # UIBundle → Tab → App → Permission Set
+│           └── visibility-chain.md   # UIBundle → CustomApplication → Permission Set
 ├── boilerplate/
 │   ├── README.md
 │   ├── sfdx-project.json             # sourceApiVersion 67.0
@@ -78,7 +78,7 @@ Progressive-disclosure design — a lean `SKILL.md` entry point that routes to f
    - Mandatory `<uiBundle>` survival check via retrieve + grep after the CustomApplication deploy.
 
 3. **Make visible** → `references/visibility-chain.md`
-   - UIBundle → Custom Tab → Lightning App (`navItems`) → Permission Set (`tabSettings` + `applicationVisibilities` + `classAccesses` + object/field perms) → `sf org assign permset`.
+   - UIBundle → CustomApplication (`<uiBundle>` field) → Permission Set (`applicationVisibilities` + `classAccesses` + object/field perms) → assign. The CustomApplication's `<uiBundle>` field serves the React app directly — no Custom Tab or FlexiPage needed.
    - The `.salesforce.app` domain URL patterns (sandbox / scratch / production).
 
 4. **Debug** → `references/gotchas.md`
