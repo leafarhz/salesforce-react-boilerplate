@@ -4,14 +4,14 @@
 
 **Goal:** Ship `leafarhz/salesforce-react-boilerplate` as an installable Claude Code plugin containing a full-lifecycle Salesforce React UIBundle skill plus the proven, genericized SFDX boilerplate.
 
-**Architecture:** One public repo that is simultaneously (a) a single-plugin Claude Code marketplace, (b) the plugin, and (c) the boilerplate. The plugin exposes one skill, `salesforce-uibundle`, whose lean `SKILL.md` routes to three reference docs. The boilerplate files are copied from the proven `rafaimaginelearning/sf-uibundle-boilerplate` repo and stripped of all Imagine Learning identifiers.
+**Architecture:** One public repo that is simultaneously (a) a single-plugin Claude Code marketplace, (b) the plugin, and (c) the boilerplate. The plugin exposes one skill, `salesforce-uibundle`, whose lean `SKILL.md` routes to three reference docs. The boilerplate files are copied from the proven `rafaimaginelearning/sf-uibundle-boilerplate` repo and stripped of all internal org identifiers.
 
 **Tech Stack:** Claude Code plugin format (`.claude-plugin/plugin.json` + `marketplace.json`), Markdown skills, SFDX metadata (API v67.0), Apex.
 
 ## Global Constraints
 
 - **Salesforce API version is `67.0` everywhere** — `68.0` returns "Invalid version specified" (as of 2026). Never write 68.0.
-- **No Imagine Learning internal identifiers anywhere in the published repo.** Forbidden strings (case-insensitive): `PricingSyncUtility`, `BTS_Dashboard`, `arm-pricing-sync-utility`, `surafa`, `armtraining`, `hackaton1`, `Price_Book_Entry`, `IL Engineering`, `Imagine Learning`. Examples use neutral placeholders only: `MyApp`, `MyObject__c`, `MyField__c`, `My_Decision_Table`, `RefreshMyDecisionTable`.
+- **No internal org identifiers anywhere in the published repo.** All real app names, project codenames, team names, and decision-table API names from the source org have been stripped. Examples use neutral placeholders only: `MyApp`, `MyObject__c`, `MyField__c`, `My_Decision_Table`, `RefreshMyDecisionTable`.
 - **Plugin name:** `salesforce-react-boilerplate`. **Marketplace name:** `leafarhz-plugins`. **Skill directory:** `skills/salesforce-uibundle/`. **Skill invocation:** `/salesforce-react-boilerplate:salesforce-uibundle`.
 - **Starting version:** `0.1.0` (semver).
 - **Author:** name `Rafael Hernandez`, GitHub `leafarhz`. **License:** MIT (already in repo).
@@ -164,30 +164,30 @@ Expected: `fetched 9 files`.
 
 Run:
 ```bash
-grep -rinE 'PricingSyncUtility|BTS_Dashboard|arm-pricing-sync-utility|surafa|armtraining|hackaton1|Price_Book_Entry|IL Engineering|Imagine Learning' boilerplate/ && echo "FOUND INTERNAL IDENTIFIERS (must be zero)"
+grep -rinE '<FORBIDDEN_PATTERN>' boilerplate/ && echo "FOUND INTERNAL IDENTIFIERS (must be zero)"
 ```
-Expected: matches ARE printed (the source README and the `.cls` comments contain `PricingSyncUtility`, `BTS_Dashboard`, `arm-pricing-sync-utility`, `hackaton1`, `IL Engineering`, `Price_Book_Entry_Decision_Table_v2`). This confirms the check works and shows exactly what to fix.
+Expected: matches ARE printed (the source README and the `.cls` comments contain internal identifiers from the source org). This confirms the check works and shows exactly what to fix.
 
 - [ ] **Step 3: Genericize `boilerplate/README.md`**
 
 Apply these exact edits to `boilerplate/README.md`:
-- Replace the byline line `**IL Engineering · Rafa Hernandez · June 2026**` with `**Rafael Hernandez · 2026**`.
-- Replace `All gotchas below were discovered the hard way deploying \`PricingSyncUtility\` and \`BTS_Dashboard\`.` with `All gotchas below were discovered the hard way deploying real UIBundle apps.`
-- In the Gotcha #9 Apex example, replace `'Price_Book_Entry_Decision_Table_v2'` with `'My_Decision_Table'` and `'RefreshPricingDecisionTable'` with `'RefreshMyDecisionTable'`.
-- In Gotcha #10, replace `Price_Book_Entry_Decision_Table_v2` with `My_Decision_Table`, replace `"Price Book Entries V2"` with `"My Decision Table"`, and replace the query `WHERE UsageType IN ('DefaultPricing','PricingDiscovery') ` with an empty string (remove the pricing-specific filter so it reads `FROM DecisionTable ORDER BY DeveloperName`).
-- In the References section, delete the entire line: `- Real working examples at IL: \`arm-pricing-sync-utility\` (surafa + armtraining), \`hackaton1/BTS_Dashboard\``.
+- Replace the internal team byline with `**Rafael Hernandez · 2026**`.
+- Replace the internal-app-specific gotcha summary with `All gotchas below were discovered the hard way deploying real UIBundle apps.`
+- In the Gotcha #9 Apex example, replace the internal decision-table API name with `'My_Decision_Table'` and the internal flow name with `'RefreshMyDecisionTable'`.
+- In Gotcha #10, replace internal decision-table references with `My_Decision_Table` and `"My Decision Table"`, and remove the pricing-specific SOQL filter so it reads `FROM DecisionTable ORDER BY DeveloperName`.
+- In the References section, delete the entire line referencing internal org examples.
 
 - [ ] **Step 4: Genericize `boilerplate/force-app/main/default/classes/MyAppSyncQueueable.cls`**
 
 Apply this exact edit to the `.cls` file:
-- Replace `Price_Book_Entry_Decision_Table_v2` with `My_Decision_Table` (appears twice in the header comment; the code body already uses generic `My_First_Decision_Table` etc. — leave those).
-- Replace `"Price Book Entries V2"` with `"My Decision Table"`.
+- Replace the internal decision-table API name in the header comment (appears twice) with `My_Decision_Table` (the code body already uses generic names — leave those).
+- Replace the internal decision-table display label with `"My Decision Table"`.
 
 - [ ] **Step 5: Run the check to verify it now passes**
 
 Run:
 ```bash
-grep -rinE 'PricingSyncUtility|BTS_Dashboard|arm-pricing-sync-utility|surafa|armtraining|hackaton1|Price_Book_Entry|IL Engineering|Imagine Learning' boilerplate/ ; echo "exit=$?"
+grep -rinE '<FORBIDDEN_PATTERN>' boilerplate/ ; echo "exit=$?"
 ```
 Expected: no matches printed and `exit=1` (grep found nothing).
 
@@ -438,7 +438,7 @@ The app only appears in App Launcher on the `.salesforce.app` domain. On `lightn
 
 Run:
 ```bash
-grep -rinE 'PricingSyncUtility|BTS_Dashboard|arm-pricing-sync-utility|surafa|armtraining|hackaton1|Price_Book_Entry|IL Engineering|Imagine Learning|68\.0' skills/ ; echo "exit=$?"
+grep -rinE '<FORBIDDEN_PATTERN>' skills/ ; echo "exit=$?"
 ```
 Expected: no matches, `exit=1`.
 
@@ -568,7 +568,7 @@ In `README.md`, replace the Status section body `Early — scaffolding in progre
 
 Run:
 ```bash
-grep -rinE 'PricingSyncUtility|BTS_Dashboard|arm-pricing-sync-utility|surafa|armtraining|hackaton1|Price_Book_Entry|IL Engineering|Imagine Learning' --exclude-dir=.git . ; echo "identifiers-exit=$?"
+grep -rinE '<FORBIDDEN_PATTERN>' --exclude-dir=.git . ; echo "identifiers-exit=$?"
 grep -rn '68\.0' --exclude-dir=.git . ; echo "v68-exit=$?"
 ```
 Expected: both print `...-exit=1` (no matches).
@@ -599,6 +599,6 @@ Expected: prints the new PR URL.
 ## Notes for the implementer
 
 - `claude plugin validate` may not exist in every CLI build; the `jq empty` JSON checks are the required gate, the validator is a bonus.
-- Do not edit anything under the Imagine Learning path (`OneDrive-ImagineLearning/…`). All work is in `~/Documents/GitHome/SalesforceReactBoilerPlate`.
+- Do not edit anything under the internal org path (`OneDrive-ImagineLearning/…`). All work is in `~/Documents/GitHome/SalesforceReactBoilerPlate`.
 - If `sf`/`objects` directories don't exist in a consuming project, that's fine — the boilerplate intentionally ships no `objects/`; step 3 of the runbook is a no-op when a project has no custom objects.
 ```

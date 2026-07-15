@@ -19,8 +19,10 @@ Multi-Framework (Beta, TDX 2026) lets you build native React apps that deploy to
 
 ```
 /plugin marketplace add leafarhz/salesforce-react-boilerplate
-/plugin install salesforce-uibundle
+/plugin install salesforce-react-boilerplate@leafarhz-plugins
 ```
+
+The skill then invokes automatically on relevant tasks, or explicitly via `/salesforce-react-boilerplate:salesforce-uibundle`.
 
 **Manually:**
 
@@ -33,7 +35,7 @@ cp -R salesforce-react-boilerplate/skills/salesforce-uibundle ~/.claude/skills/
 
 ## Status
 
-Early — scaffolding in progress. See `docs/` for the design.
+Working plugin: one skill (`salesforce-uibundle`) + boilerplate. See `docs/design.md` for the design and `docs/plan.md` for the build plan.
 
 ## License
 

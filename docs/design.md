@@ -8,12 +8,12 @@
 
 Package hard-won Salesforce React UIBundle (Multi-Framework) knowledge as a reusable, public **Claude skill** so that starting a new UIBundle project no longer means rediscovering the same gotchas by hand. The skill guides Claude through the full lifecycle — scaffold → deploy → make visible → debug — and ships with proven metadata boilerplate in the same repo.
 
-This is a **public, community** project. It must not carry Imagine Learning internal identifiers; content distilled from internal notes is genericized before publishing.
+This is a **public, community** project. It must not carry internal org identifiers; content distilled from internal notes is genericized before publishing.
 
 ## Repository & account
 
 - **GitHub repo:** `leafarhz/salesforce-react-boilerplate` (public)
-- **Owner account:** `leafarhz` (personal GitHub, NOT an Imagine Learning org)
+- **Owner account:** `leafarhz` (personal GitHub, NOT an internal org account)
 - **Local path:** `~/Documents/GitHome/SalesforceReactBoilerPlate` (outside any OneDrive-ImagineLearning sync)
 - **Default branch:** `main`
 
@@ -93,7 +93,7 @@ Progressive-disclosure design — a lean `SKILL.md` entry point that routes to f
 ## Content source & genericization
 
 - **Boilerplate files:** copied from `rafaimaginelearning/sf-uibundle-boilerplate` (confirmed present: `README.md`, `sfdx-project.json`, `destructive/*`, and five `force-app` metadata files), then reviewed for any internal specifics.
-- **Reference docs:** distilled from internal notes. **All Imagine Learning identifiers are stripped** before publishing — no real app names, project codenames, or decision-table API names. Examples in the docs use neutral placeholders (`MyApp`, `MyObject__c`, `My_Decision_Table`).
+- **Reference docs:** distilled from internal notes. **All internal org identifiers are stripped** before publishing — no real app names, project codenames, or decision-table API names. Examples in the docs use neutral placeholders (`MyApp`, `MyObject__c`, `My_Decision_Table`).
 
 ## Distribution details
 
@@ -111,4 +111,4 @@ Progressive-disclosure design — a lean `SKILL.md` entry point that routes to f
 - A public `leafarhz/salesforce-react-boilerplate` repo exists with the layout above.
 - The skill installs via the marketplace command AND via manual copy.
 - Invoking the skill on a new project reproduces scaffold → deploy → make-visible → debug without the human re-deriving the gotchas.
-- No Imagine Learning internal identifiers appear anywhere in the published repo.
+- No internal org identifiers appear anywhere in the published repo.
