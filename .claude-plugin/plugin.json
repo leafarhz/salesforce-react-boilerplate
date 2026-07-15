@@ -1,0 +1,14 @@
+{
+  "name": "salesforce-react-boilerplate",
+  "displayName": "Salesforce React UIBundle Kit",
+  "version": "0.1.0",
+  "description": "Full-lifecycle guide and boilerplate for building Salesforce React UIBundle (Multi-Framework) apps — scaffold, deploy, make visible, and debug the known gotchas.",
+  "author": {
+    "name": "Rafael Hernandez",
+    "url": "https://github.com/leafarhz"
+  },
+  "homepage": "https://github.com/leafarhz/salesforce-react-boilerplate",
+  "repository": "https://github.com/leafarhz/salesforce-react-boilerplate",
+  "license": "MIT",
+  "keywords": ["salesforce", "react", "uibundle", "multi-framework", "sfdx"]
+}

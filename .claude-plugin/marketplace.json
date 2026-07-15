@@ -1,0 +1,17 @@
+{
+  "name": "leafarhz-plugins",
+  "owner": {
+    "name": "Rafael Hernandez",
+    "url": "https://github.com/leafarhz"
+  },
+  "description": "Rafael Hernandez's Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "salesforce-react-boilerplate",
+      "source": "./",
+      "description": "Full-lifecycle guide and boilerplate for building Salesforce React UIBundle (Multi-Framework) apps.",
+      "version": "0.1.0",
+      "author": { "name": "Rafael Hernandez" }
+    }
+  ]
+}
