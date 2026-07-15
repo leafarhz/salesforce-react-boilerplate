@@ -15,3 +15,13 @@ build/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code working notes — DO NOT COMMIT (internal ledgers, task briefs, reports)
+.superpowers/
+.claude/
+CLAUDE.local.md
+
+# Secrets / local env
+.env
+.env.*
+!.env.example

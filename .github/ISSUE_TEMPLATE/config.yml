@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Salesforce Multi-Framework docs
+    url: https://developer.salesforce.com/docs
+    about: Official Salesforce documentation for UIBundle / Multi-Framework.
+  - name: Question or idea
+    url: https://github.com/leafarhz/salesforce-react-boilerplate/discussions
+    about: For open-ended questions, prefer Discussions over an issue.
