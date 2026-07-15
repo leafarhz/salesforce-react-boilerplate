@@ -10,7 +10,7 @@ Jump from what you're seeing to the fix.
 | `No such column 'MyField__c' on entity 'MyObject__c'` | #3 (FLS is separate from object perms) |
 | `You cannot deploy to a required field` | #4 (required fields can't be in PS fieldPermissions) |
 | `Property 'componentInstances' not valid in version 67.0` | #6 (don't use a FlexiPage) |
-| `Invalid version specified` | #8 (use API 67.0, not the next version) |
+| `Invalid version specified` | #8 (use API 67.0, not 68.0) |
 | `INVALID_SESSION_ID` on a REST callout from Apex | #9 (never use a Lightning session ID) |
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
@@ -60,7 +60,7 @@ The `<name>` element is invalid (API name comes from the filename). Required fie
 
 ## #8 — `sourceApiVersion` must be `67.0`
 
-Any version above `67.0` returns "Invalid version specified" (as of 2026). Projects inherited from earlier may be on `66.0` — bump to `67.0`.
+`68.0` returns "Invalid version specified" (as of 2026). Projects inherited from earlier may be on `66.0` — bump to `67.0`.
 
 ## #9 — Never call the Salesforce REST API from Apex with a Lightning session ID
 
