@@ -3,6 +3,8 @@
 Deploy in this exact order. Out-of-order deploys cause hard-to-diagnose failures.
 `<alias>` = your target org alias. Replace `MyApp` with your app's DeveloperName.
 
+Since Summer '26 GA, `<alias>` can be a **production** org as well as a sandbox/scratch org — the sequence is identical. The creation-only `<uiBundle>` caveat (step 2 / gotcha #1) applies **per org**, so the first CustomApplication deploy into production must also be a create, not an update.
+
 ## First-time deploy
 
 ```bash

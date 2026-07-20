@@ -14,6 +14,8 @@ Jump from what you're seeing to the fix.
 | `INVALID_SESSION_ID` on a REST callout from Apex | #9 (never use a Lightning session ID) |
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
+| Beta app broke after Summer '26 GA | #12 (5 beta→GA breaking changes) |
+| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | #13 (user lacks the Agentforce entitlement — NOT a code bug) |
 
 ## #1 — `<uiBundle>` is creation-only and silently stripped
 
@@ -60,7 +62,7 @@ The `<name>` element is invalid (API name comes from the filename). Required fie
 
 ## #8 — `sourceApiVersion` must be `67.0`
 
-`68.0` returns "Invalid version specified" (as of 2026). Projects inherited from earlier may be on `66.0` — bump to `67.0`.
+`67.0` is the Summer '26 GA version. `68.0` returns "Invalid version specified" (as of 2026). Projects inherited from earlier may be on `66.0` — bump to `67.0`. On a release newer than Summer '26, verify the current version against the org before assuming `68.0` still fails.
 
 ## #9 — Never call the Salesforce REST API from Apex with a Lightning session ID
 
@@ -87,3 +89,41 @@ sf data query --query "SELECT DeveloperName, SetupName FROM DecisionTable ORDER 
 ## #11 — App Launcher only works on the `.salesforce.app` domain
 
 On `lightning.force.com` the app shows "No Items" / "doesn't have any navigation items" — that's the wrong domain, not a bug. Open UIBundle apps from `.salesforce.app` (see visibility-chain.md for URL patterns).
+
+## #12 — Beta → GA (Summer '26) breaking changes
+
+Multi-Framework went GA in Summer '26 (production-ready, no opt-in, all org types). An app scaffolded against the beta needs these five changes:
+
+1. **SDK import path:** `@salesforce/sdk-data` → **`@salesforce/platform-sdk`**.
+2. **GraphQL API split:** the single `graphql()` call is now **`.query()`** (reads) and **`.mutate()`** (writes).
+3. **Optional-chain results:** `result?.data` — `data` can now be `undefined`; guard it.
+4. **UIBundle metadata target:** `<target>AppLauncher</target>` → **`<target>CustomApplication</target>`**. (This boilerplate already ships the GA-correct value — see gotcha #5.)
+5. **Remove** the deprecated `UiBundleSettings` scratch-org configuration.
+
+Fresh scaffolds via the current `@salesforce/plugin-uibundle` CLI already emit the GA shape — this list is only for migrating an existing beta app.
+
+## #13 — App renders but every data call 401s → it's an ENTITLEMENT, not code
+
+The single most expensive trap. The app deploys, loads on `.salesforce.app`, shows "Logged in as …" — but **every** call to `/services/apexrest/*` (or the Data SDK) returns **401 Unauthorized**, usually alongside a `GET /services/data/v50.0/ui-api/session/csrf` **404** (a stale API version). It looks exactly like a data-layer / auth-header bug, so you'll burn hours swapping SDKs and fetch patterns. **Don't.**
+
+**Root cause:** the *running user* lacks the **Agentforce entitlement** to run a Multi-Framework app with an authenticated session. Multi-Framework is on the Agentforce 360 platform, so without the entitlement the platform **refuses to mint a session** for the app — and the 401 + `v50` CSRF 404 are just symptoms of "no session provisioned." Being a System Administrator is **not** enough.
+
+**Fix:** assign the user a permission set backed by the **Agentforce Platform Developer and Admin** PSL — the standard **`AgentforceDeveloperAndAdminTools`** permission set. That PSL ships **200,000 seats** (effectively free), so there's no license wall for it.
+```bash
+sf org assign permset --name AgentforceDeveloperAndAdminTools --target-org <alias>
+```
+The 401 and CSRF 404 clear **immediately** on the next reload — no code change, no redeploy.
+
+**Proof it's not code:** the exact same `sdk.fetch` code that 401'd before the assignment works after it. `sdk.fetch` from **either** `@salesforce/sdk-data` or `@salesforce/platform-sdk` works once entitled. (A plain global `fetch()` 401s regardless — the SDK's authenticated fetch is still required; see the Data access section in SKILL.md.)
+
+**Diagnose fast:** compare the *working* user's permission sets against the *failing* user's — the delta is the Agentforce entitlement:
+```bash
+sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WHERE Assignee.Username='<user>'" --target-org <alias>
+```
+
+**Red-herring warning:** trying to assign the perm set may throw *"All Agentforce (Default) permission set licenses are in use."* That error is usually from a **different** perm set in the same assign batch (e.g. `GenieAdmin`, which needs a maxed license) — NOT from `AgentforceDeveloperAndAdminTools`. Confirm the specific PSL a perm set needs and its seat count before assuming you're out of licenses:
+```bash
+# PermissionSet.LicenseId → the required PermissionSetLicense; check its seats
+sf data query --query "SELECT Name, LicenseId FROM PermissionSet WHERE Name='AgentforceDeveloperAndAdminTools'" --target-org <alias>
+sf data query --query "SELECT MasterLabel, TotalLicenses, UsedLicenses FROM PermissionSetLicense WHERE Id='<LicenseId>'" --target-org <alias>
+```

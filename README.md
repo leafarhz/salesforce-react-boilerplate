@@ -2,7 +2,7 @@
 
 A Claude skill **and** boilerplate for building **Salesforce React UIBundle (Multi-Framework)** apps — the full lifecycle, from scaffold to a visible, working app in the App Launcher, with the hard-won gotchas baked in.
 
-Multi-Framework (Beta, TDX 2026) lets you build native React apps that deploy to the Salesforce App Launcher. It is powerful but under-documented — the deploy order, the `.salesforce.app` domain, the creation-only `<uiBundle>` field, and FLS-vs-object-permission traps cost real hours the first time. This repo captures that so you (and Claude) don't rediscover it.
+Multi-Framework (**GA as of Summer '26**; announced TDX 2026) lets you build native React apps that deploy to the Salesforce App Launcher — now production-ready, enabled in every org, deployable to production/sandbox/DE/scratch. It is powerful but under-documented — the deploy order, the `.salesforce.app` domain, the creation-only `<uiBundle>` field, the `@salesforce/platform-sdk` data layer, and FLS-vs-object-permission traps cost real hours the first time. This repo captures that so you (and Claude) don't rediscover it.
 
 ## What's in here
 
