@@ -15,7 +15,7 @@ Jump from what you're seeing to the fix.
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
 | Beta app broke after Summer '26 GA | #12 (5 beta→GA breaking changes) |
-| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | #13 (user lacks the Agentforce entitlement — NOT a code bug) |
+| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | #13 (user lacks the Agentforce entitlement — NOT a code bug); if that checks out, also try #14 (`AppFrameworkPsl`) |
 
 ## #1 — `<uiBundle>` is creation-only and silently stripped
 
@@ -127,3 +127,15 @@ sf data query --query "SELECT PermissionSet.Name FROM PermissionSetAssignment WH
 sf data query --query "SELECT Name, LicenseId FROM PermissionSet WHERE Name='AgentforceDeveloperAndAdminTools'" --target-org <alias>
 sf data query --query "SELECT MasterLabel, TotalLicenses, UsedLicenses FROM PermissionSetLicense WHERE Id='<LicenseId>'" --target-org <alias>
 ```
+
+## #14 — `AgentforceDeveloperAndAdminTools` alone isn't always enough — also check `AppFrameworkPsl`
+
+Found 2026-07-28: a user already correctly entitled with `AgentforceDeveloperAndAdminTools` (verified assigned, PSL active with plenty of seats) still got a persistent 401 on every data call, in an org where the app had never been opened before by anyone. Comparing the same user's permission sets in a working org (where the app had been used before) against the failing org surfaced a second, separate permission set: **`AppFrameworkPsl`** (label "App Framework") — present and assignable in both orgs, but only actually *assigned* in the working one.
+
+```bash
+sf org assign permset --name AppFrameworkPsl --target-org <alias>
+```
+
+The 401 is the same symptom as gotcha #13 (Agentforce entitlement missing), so it's easy to stop diagnosing once `AgentforceDeveloperAndAdminTools` checks out — don't. If the 401 persists after confirming that permset is assigned and correct, check for `AppFrameworkPsl` too before assuming something else is wrong. Diagnose the same way as #13: compare a working user/org's full permission set list against the failing one — the delta names the gap directly, faster than guessing.
+
+**Not yet confirmed:** whether `AppFrameworkPsl` is required in every org, or only some (parallel to how gotcha #13's Agentforce PSL provisioning itself varies per sandbox). Treat both #13 and #14 as "check this too" rather than a fixed two-step checklist until this is verified across more orgs.
