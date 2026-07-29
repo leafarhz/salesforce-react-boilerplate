@@ -5,6 +5,23 @@ Deploy in this exact order. Out-of-order deploys cause hard-to-diagnose failures
 
 Since Summer '26 GA, `<alias>` can be a **production** org as well as a sandbox/scratch org — the sequence is identical. The creation-only `<uiBundle>` caveat (step 2 / gotcha #1) applies **per org**, so the first CustomApplication deploy into production must also be a create, not an update.
 
+## Before every build — verify the baked-in org (see gotcha #16)
+
+**Do this before step 1, every time, not just once.** The build bakes a Salesforce API version into the bundle from whatever org `vite.config.ts`'s `salesforce({ orgAlias: ... })` resolves — if that's missing or wrong, the app renders fine but every data call 401s, and no amount of permission/entitlement/cache troubleshooting will fix it (it's a build-time bug, not a runtime one).
+
+```bash
+grep orgAlias force-app/main/default/uiBundles/MyApp/vite.config.ts
+# Must show your actual target org's alias, e.g. orgAlias: 'preprod2' — a bare
+# salesforce() with no orgAlias resolves to the BUILDING MACHINE's global CLI
+# default target-org instead, unrelated to <alias> below.
+
+npm run build
+grep -o 'v67\.0' force-app/main/default/uiBundles/MyApp/dist/assets/*.js
+# (replace 67.0 with your target org's real API version) - no output, or a
+# different version, means the wrong org got baked in. Fix vite.config.ts
+# and rebuild before deploying anything.
+```
+
 ## First-time deploy
 
 ```bash

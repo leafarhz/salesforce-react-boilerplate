@@ -11,8 +11,9 @@ All gotchas below were discovered the hard way deploying real UIBundle apps.
 
 1. Copy this folder and rename `MyApp` to your app's DeveloperName everywhere (case-sensitive).
 2. Build your React app inside `force-app/main/default/uiBundles/MyApp/` using the Salesforce UIBundle CLI.
-3. Follow the deploy order in **Deployment Runbook** below.
-4. Access the app at the correct URL (see **The URL** section).
+3. **Immediately open the generated `vite.config.ts` and add your target org's alias to the `salesforce()` plugin call: `salesforce({ orgAlias: '<alias>' })`.** Do this before your first build — see **Gotcha #12** below for exactly what silently breaks if you skip it (a persistent 401 that survives every other fix and takes hours to trace back here).
+4. Follow the deploy order in **Deployment Runbook** below.
+5. Access the app at the correct URL (see **The URL** section).
 
 ---
 
@@ -33,6 +34,22 @@ The app only appears in App Launcher when you're on the `.salesforce.app` domain
 ## Deployment Runbook
 
 Follow this order exactly. Deploying out of order causes hard-to-diagnose failures.
+
+### Step 0 — Verify the build baked in the RIGHT org (see Gotcha #12)
+
+**Do this before every build, not just the first one:**
+```bash
+grep orgAlias force-app/main/default/uiBundles/MyApp/vite.config.ts
+# Must show your real target org's alias. A bare salesforce() with no
+# orgAlias silently resolves to YOUR MACHINE's global CLI default
+# target-org instead - unrelated to <alias> below.
+
+npm run build
+grep -o 'v67\.0' force-app/main/default/uiBundles/MyApp/dist/assets/*.js
+# (use your target org's real API version) - no output, or a different
+# version, means the wrong org got baked in and every data call will 401
+# no matter how correctly you do everything else below.
+```
 
 ### Step 1 — Deploy the UIBundle (React build)
 
@@ -261,6 +278,37 @@ Using the wrong name returns "The decision table API Name is invalid" for every 
 ### Gotcha #11 — App Launcher only works on `.salesforce.app` domain
 
 If you're on `lightning.force.com` and the UIBundle app shows "This app doesn't have any navigation items" — that's not a bug, it's the wrong domain. UIBundle apps must be opened from the `.salesforce.app` domain.
+
+---
+
+### Gotcha #12 — THE #1 cause of "renders fine, every data call 401s": the build baked in the wrong org's API version
+
+**Check this FIRST if data calls 401 — before touching permissions, SDK packages, or the browser cache.** This one cost hours in a real incident: the app renders, shows "Logged in as …", but every `sdk.fetch()`/GraphQL call 401s, usually with a `GET .../services/data/vNN.0/ui-api/session/csrf` **404** where `NN` is an implausibly old version (e.g. `50.0` when the org is actually on `67.0`).
+
+**Why:** the Vite plugin (`@salesforce/vite-plugin-ui-bundle`, the `salesforce()` call in `vite.config.ts`) bakes a Salesforce API version into the build as a compile-time constant. It gets that version by connecting to an org via `@salesforce/core` — and if the plugin isn't told which org (`orgAlias` option left unset), it connects to whatever org is your **machine's global CLI default target-org** (`sf config get target-org`), which has nothing to do with where you're actually deploying. That org's own (possibly long-stale) cached API version gets baked in instead, breaking the SDK's internal session/CSRF handshake against your REAL target org — regardless of which Data SDK package you use, your permissions, or the browser cache. None of those were ever the problem.
+
+**Fix — set it explicitly, always:**
+```ts
+// vite.config.ts
+salesforce({ orgAlias: 'your-target-org-alias' }),
+```
+
+**Diagnose fast if you're not sure this is it:**
+```bash
+# Temporarily, in vite.config.ts:
+salesforce({ debug: true }),
+```
+```bash
+npm run build 2>&1 | grep -i "api version"
+# [ui-bundle-plugin] Using Salesforce API version: 50.0   <- compare to your real org's version
+```
+
+**Verify the fix actually landed** before you spend time on Step 1 onward:
+```bash
+npm run build
+grep -o 'v67\.0' force-app/main/default/uiBundles/MyApp/dist/assets/*.js
+# (your real target org's version) - absence of output means it didn't take.
+```
 
 ---
 

@@ -15,7 +15,7 @@ Jump from what you're seeing to the fix.
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
 | Beta app broke after Summer '26 GA | #12 (5 beta→GA breaking changes) |
-| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | **Check #15 first** (stale cached bundle after a redeploy) — cheaper to rule out and can look identical to #13/#14. If a true hard refresh doesn't clear it, then #13 (Agentforce entitlement) and #14 (`AppFrameworkPsl`) |
+| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale-looking API version like `v50.0`) | **Check #16 FIRST** (build baked in the wrong org's API version — the actual answer almost every time this symptom shows up with a wrong-looking version number). Only after ruling that out: #15 (stale cached bundle), #13 (Agentforce entitlement), #14 (`AppFrameworkPsl`) |
 
 ## #1 — `<uiBundle>` is creation-only and silently stripped
 
@@ -94,7 +94,7 @@ On `lightning.force.com` the app shows "No Items" / "doesn't have any navigation
 
 Multi-Framework went GA in Summer '26 (production-ready, no opt-in, all org types). An app scaffolded against the beta needs these five changes:
 
-1. **SDK import path:** `@salesforce/sdk-data` → **`@salesforce/platform-sdk`**.
+1. **SDK import path:** Salesforce's own beta→GA migration guidance says `@salesforce/sdk-data` → `@salesforce/platform-sdk`. **In practice, prefer `@salesforce/sdk-data`** — it's the package used by every proven working reference app this skill has actually verified, it's actively maintained (current releases track the same version line as `@salesforce/ui-bundle`/`@salesforce/vite-plugin-ui-bundle`), and it produces a smaller bundle (no analytics/o11y chunk). **Note:** the CSRF-handshake 401 in gotcha #16 hits *both* packages identically — it's baked in at build time by `@salesforce/vite-plugin-ui-bundle`, upstream of either SDK's own code, so switching packages was never going to fix it (confirmed empirically: reverting from `platform-sdk` to `sdk-data` hit the exact same wrong version). Prefer `sdk-data` for the reasons above, not because it avoids #16 — nothing avoids #16 except setting `orgAlias`.
 2. **GraphQL API split:** the single `graphql()` call is now **`.query()`** (reads) and **`.mutate()`** (writes).
 3. **Optional-chain results:** `result?.data` — `data` can now be `undefined`; guard it.
 4. **UIBundle metadata target:** `<target>AppLauncher</target>` → **`<target>CustomApplication</target>`**. (This boilerplate already ships the GA-correct value — see gotcha #5.)
@@ -116,7 +116,7 @@ The 401 and CSRF 404 clear **immediately** on the next reload — no code change
 
 **Proof it's not code:** the exact same `sdk.fetch` code that 401'd before the assignment works after it — at least in the org (`suakhil`) this was originally diagnosed in. (A plain global `fetch()` 401s regardless — the SDK's authenticated fetch is still required; see the Data access section in SKILL.md.)
 
-**⚠️ Correction (2026-07-29):** "sdk.fetch works from either package once entitled" turned out not to hold universally. In a different org (PP2), `@salesforce/sdk-data`'s `sdk.fetch` kept 401ing even with the user fully entitled (both this PSL and #14's `AppFrameworkPsl` assigned, both verified) — switching the import to `@salesforce/platform-sdk` fixed it immediately, no other change. Not yet root-caused why the two packages diverge. **If entitlement checks out clean and the 401 still won't clear, try switching SDK packages before assuming something else is wrong** — see the Data access section in SKILL.md, now updated to recommend `@salesforce/platform-sdk` as the default rather than calling both equivalent.
+**⚠️⚠️ FINAL CORRECTION (2026-07-29) — read this, not the two corrections below it.** Everything past this point in the PP2 incident (the package swap, the `basePath` workaround, the `AppFrameworkPsl` finding in #14, the stale-cache finding in #15) was chasing symptoms of **gotcha #16** — a build-time bug that bakes the wrong org's API version into the bundle, independent of SDK package, entitlement, or cache. None of those intermediate fixes were the actual answer; #16 was. If you're reading this gotcha because of a persistent 401, **skip straight to #16** and only come back here if it genuinely doesn't apply (both PSLs really do matter for a *first-time* deploy to a new org — just not for this specific symptom once #16 is ruled out).
 
 **Diagnose fast:** compare the *working* user's permission sets against the *failing* user's — the delta is the Agentforce entitlement:
 ```bash
@@ -142,7 +142,7 @@ The 401 is the same symptom as gotcha #13 (Agentforce entitlement missing), so i
 
 **Not yet confirmed:** whether `AppFrameworkPsl` is required in every org, or only some (parallel to how gotcha #13's Agentforce PSL provisioning itself varies per sandbox). Treat both #13 and #14 as "check this too" rather than a fixed two-step checklist until this is verified across more orgs.
 
-**⚠️ Correction (same day):** in the incident that produced this gotcha, the 401 actually persisted for a different reason — **see #15**. The browser was still running a stale cached bundle (built and deployed *before* the permission fixes described here), so it's unclear whether assigning `AppFrameworkPsl` did anything at all in that specific case. The finding itself is real (the license genuinely has a hard 1-seat cap in that org, verified via `PermissionSetLicense`), but don't treat it as a confirmed fix for a 401 until you've also ruled out #15 — check #15 first, it's cheaper.
+**⚠️⚠️ FINAL CORRECTION (2026-07-29):** the actual root cause of the 401 in this incident was **gotcha #16** (build baked in the wrong org's API version), not this. The `AppFrameworkPsl` finding is still real and worth having assigned (a genuine, separately-verified license requirement for a first-time deploy to a new org), but it did not cause and was not the fix for this particular 401 — check #16 first for that symptom.
 
 ## #15 — Persistent 401 after a redeploy: check for a stale cached bundle before touching permissions
 
@@ -158,3 +158,42 @@ The 401 is the same symptom as gotcha #13 (Agentforce entitlement missing), so i
 3. Only escalate to #13/#14 (permission/entitlement troubleshooting) if the 401 survives a *confirmed* fresh bundle load.
 
 **Diagnostic note for AI agents without browser access:** if you can't inspect the Network tab yourself, you can't tell #13/#14 apart from #15 by symptom alone — server-side checks (permission sets, licenses) can all come back clean while the real problem is sitting in the user's browser cache. Ask the user to try a hard refresh or incognito window *before* spending time on permission-set archaeology; it's the cheaper test and rules out a whole category of false leads.
+
+**⚠️⚠️ FINAL CORRECTION (2026-07-29):** in the incident that produced this gotcha, cache genuinely was part of the picture (the browser really was serving a stale bundle at one point) — but even after a confirmed fresh bundle load, the 401 persisted, because the real cause was **gotcha #16**. Rule out #16 first; it's a build-time bug that no amount of browser-side cache-clearing can fix.
+
+## #16 — THE 401 ROOT CAUSE: the build bakes in the wrong org's API version if `orgAlias` isn't set
+
+**Check this FIRST for any persistent 401, before #13/#14/#15.** It's the actual answer behind all three of those gotchas' original incidents — a multi-hour debugging saga that swapped SDK packages, added `basePath` overrides, chased entitlements, and cleared caches, none of which could have worked, because the real bug was never in the app's code, the SDK choice, or the user's permissions at all.
+
+**The mechanism:** `@salesforce/vite-plugin-ui-bundle` (the `salesforce()` plugin in `vite.config.ts`) bakes a Salesforce API version into the build as a compile-time constant (`__SF_API_VERSION__`). It gets that version by calling `@salesforce/core`'s `Org.create({ aliasOrUsername: options.orgAlias })` — and **if `orgAlias` isn't passed to the plugin, that call becomes `Org.create({})`, which resolves to whatever org is the *local machine's* CLI global default target-org** (`sf config get target-org`, falling through to `~/.sf/config.json` if the project has no local `.sf/config.json` of its own). That has nothing to do with which org you're actually deploying to. If your global default happens to be some other org — a scratch org, a Trailhead/orgfarm practice org, anything — that org's own (possibly long-stale, cached-at-authentication-time) API version gets baked into the bundle instead.
+
+That stale version then breaks the Data SDK's internal CSRF/session handshake specifically — the handshake URL is built from this baked-in version, not from anything in `globalThis.SFDC_ENV`, so it 404s against your real target org regardless of entitlement, SDK package (`@salesforce/sdk-data` and `@salesforce/platform-sdk` both hit this identically — it's the same build plugin baking in the same wrong constant either way), or cache state. Every real REST/GraphQL call your own code makes then 401s, because the SDK never got a valid session token from that broken handshake.
+
+**Symptom:** a `GET .../services/data/vNN.0/ui-api/session/csrf` **404**, where `NN` doesn't match your target org's actual API version (classically something implausibly old, like `50.0`, when your org is on `67.0`) — followed by 401 on every real data call. Renders fine; only data calls fail. Looks identical to gotchas #13/#14/#15.
+
+**Diagnose fast — don't guess, get the plugin to tell you:**
+```ts
+// vite.config.ts — temporarily, for diagnosis only
+salesforce({ debug: true }),
+```
+```bash
+npm run build 2>&1 | grep -i "api version"
+# [ui-bundle-plugin] Using Salesforce API version: 50.0   <- if this doesn't match your target org, you're in this gotcha
+```
+If you need to know *which* org it resolved to (not just the version), temporarily patch the installed plugin to also log `orgInfo` (it's not exposed as a public option) — find the `if (options.debug)` block in `node_modules/@salesforce/vite-plugin-ui-bundle/dist/index.js` and add a line logging `JSON.stringify(orgInfo)` right after the existing debug log. `orgInfo.username`/`orgInfo.instanceUrl` will tell you exactly which org it grabbed. Revert the patch (`rm -rf node_modules/@salesforce/vite-plugin-ui-bundle && npm install`) once you've confirmed it — it's not something to commit.
+
+**Fix — pin the org explicitly, don't rely on machine state:**
+```ts
+// vite.config.ts
+salesforce({ orgAlias: 'your-target-org-alias' }),
+```
+This is **not optional, and not just for this incident** — without it, the build's correctness silently depends on whatever org happens to be the *building machine's* global CLI default at build time, which is mutable, unrelated to the project, and can differ between your machine, a teammate's machine, and CI. Every UIBundle project should set this in `vite.config.ts` at scaffold time, not discover it's missing after a debugging marathon.
+
+**Verify the fix actually landed before deploying** (don't just trust `debug: true`'s console output — confirm the literal is really in the compiled artifact you're about to ship):
+```bash
+npm run build
+grep -o 'v67\.0' dist/assets/*.js   # or your target org's actual API version
+# Absence of output, or a DIFFERENT version showing up, means it didn't take.
+```
+
+**Why the reference apps (this boilerplate's own proven examples) never hit this:** they either had their own local `.sf/config.json` pinning the right org, or the building machine's global default happened to already be correct at the time they were last built — not because they were somehow immune. Don't assume "it works elsewhere" means the plugin call itself was safe; check whether `orgAlias` was actually set explicitly before trusting a reference app as proof this gotcha doesn't apply.

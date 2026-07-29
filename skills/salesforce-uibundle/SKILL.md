@@ -16,7 +16,8 @@ Salesforce Multi-Framework lets you build native React apps that deploy to the A
 - Salesforce API version is **`67.0`** (Summer '26). `68.0` returns "Invalid version specified." Verify against your org's release if newer.
 - UIBundle apps are served on the **`.salesforce.app`** domain, not `lightning.force.com`.
 - The `<uiBundle>` field on a CustomApplication is **creation-only** — deploy it exactly once as a create.
-- **Data + auth are handled by the platform Data SDK** (`@salesforce/platform-sdk`) — no OAuth/token management inside the app. See "Data access" below.
+- **`vite.config.ts` MUST pass an explicit `orgAlias` to the `salesforce()` plugin call — never leave it bare.** Without it, the plugin resolves the API version it bakes into the build from whatever org is the *building machine's* global CLI default (`sf config get target-org`), completely unrelated to your actual target org. This is THE most common cause of a persistent 401 that survives every other fix — see gotcha #16. Set it during scaffolding, not after debugging it.
+- **Data + auth are handled by the platform Data SDK** (`@salesforce/sdk-data` — see "Data access" below for why, despite Salesforce's own beta→GA docs suggesting `@salesforce/platform-sdk`) — no OAuth/token management inside the app.
 - **GA limitation:** React apps surface as **standalone App Launcher apps**. Lightning App Builder drag-drop placement and embedding externally-hosted React components are **not yet supported** (roadmap). If you need a component embedded on a record/home page, that's still LWC territory today.
 
 ## Lifecycle
@@ -25,7 +26,9 @@ Salesforce Multi-Framework lets you build native React apps that deploy to the A
 1. Copy this plugin's `boilerplate/` into the user's SFDX project.
 2. Rename every `MyApp` reference to the chosen DeveloperName — case-sensitive, in filenames AND file contents (`applications/`, `uiBundles/`, `permissionsets/`, `classes/`).
 3. Confirm `sfdx-project.json` has `"sourceApiVersion": "67.0"`.
-4. Generate the React app inside `force-app/main/default/uiBundles/<App>/` using the Salesforce UIBundle CLI (`@salesforce/plugin-uibundle`). The boilerplate ships the `.uibundle-meta.xml` only — the CLI creates the React source.
+4. Generate the React app inside `force-app/main/default/uiBundles/<App>/` using the Salesforce UIBundle CLI (`@salesforce/plugin-uibundle`). The boilerplate ships the `.uibundle-meta.xml` only — the CLI creates the React source, including a fresh `vite.config.ts`.
+5. **MANDATORY, do not skip:** open the generated `vite.config.ts` and add the target org alias to the `salesforce()` plugin call: `salesforce({ orgAlias: '<target-org-alias>' })`. The CLI generates this call bare (no options), which is unsafe — see gotcha #16 for exactly what breaks and why it's easy to not notice until hours into debugging a 401. Do this before the first build, not after something goes wrong.
+6. Verify it actually took: `npm run build && grep -o 'v67\.0' dist/assets/*.js` (or whatever your target org's real API version is) — confirms the correct version landed in the compiled bundle, not just that you edited the config file.
 
 ### 2. Deploy
 Follow **[references/deployment-runbook.md](references/deployment-runbook.md)** in exact order. Do not skip the `<uiBundle>` survival check after the CustomApplication deploy — if it was stripped, use the destructive re-deploy in the runbook.
@@ -38,16 +41,16 @@ Start from the symptom index in **[references/gotchas.md](references/gotchas.md)
 
 ## Data access (React → Salesforce)
 
-The React bundle reads and writes Salesforce data through the **platform Data SDK** — `@salesforce/platform-sdk`. Auth is automatic: the user's Salesforce session (on the `.salesforce.app` domain) is used under the platform security/governance model, so there is **no OAuth flow, token storage, or CORS setup** inside the app (unlike a static-resource or externally-hosted React app).
+The React bundle reads and writes Salesforce data through the **platform Data SDK**. Auth is automatic: the user's Salesforce session (on the `.salesforce.app` domain) is used under the platform security/governance model, so there is **no OAuth flow, token storage, or CORS setup** inside the app (unlike a static-resource or externally-hosted React app).
+
+**Use `@salesforce/sdk-data` for `createDataSDK()`, not `@salesforce/platform-sdk`.** Every proven working reference app this skill has verified uses `sdk-data` with zero options and a plain relative-path `sdk.fetch(path)` — no `basePath` override, no absolute-URL workaround, nothing. `platform-sdk` is what Salesforce's own beta→GA docs suggest migrating to, but it pulls in a heavier analytics/o11y chunk for no benefit here, and it's easy to end up down a debugging rabbit hole assuming it's the "more correct" choice when it isn't. (Whichever package you pick, gotcha #16 — the build baking in the wrong org's API version — affects both identically; picking `sdk-data` doesn't protect you from that, only setting `orgAlias` does.)
 
 The SDK gives three things:
-- **GraphQL** — `.query()` for reads, `.mutate()` for writes. Same UI API GraphQL backend LWC uses (Relay `edges → node` shape; scalars wrapped as `{ value: … }`).
-- **Apex invocation** — call `@AuraEnabled` / Apex REST methods directly. Use this for anything the GraphQL layer can't express: dynamic SOQL, aggregate queries (`COUNT`, `GROUP BY`, `WEEK_IN_YEAR`), batch orchestration, and multi-step server-side business logic.
+- **GraphQL** — `sdk.graphql<TData, TVariables>({ query, variables })` is a single callable (NOT separate `.query()`/`.mutate()` methods — that's `platform-sdk`'s shape, not `sdk-data`'s; check which package's type signature you're actually coding against, don't assume). Same UI API GraphQL backend LWC uses (Relay `edges → node` shape; scalars wrapped as `{ value: … }`).
+- **Apex invocation** — call `@AuraEnabled` / Apex REST methods directly via `sdk.fetch()`. Use this for anything the GraphQL layer can't express: dynamic SOQL, aggregate queries (`COUNT`, `GROUP BY`, `WEEK_IN_YEAR`), batch orchestration, and multi-step server-side business logic.
 - **UI API** — user context and record UI metadata.
 
-**Prerequisite — the running user needs the Agentforce entitlement.** Even a System Admin gets **401 on every data call** (app renders, but no session is minted) until assigned a permission set backed by the *Agentforce Platform Developer and Admin* PSL — the standard **`AgentforceDeveloperAndAdminTools`** perm set (`sf org assign permset --name AgentforceDeveloperAndAdminTools`). This is the #1 "it renders but data 401s" trap — see gotcha #13; also check gotcha #14 (`AppFrameworkPsl`) and #15 (stale cached bundle, cheaper to rule out and can look identical to either) if #13 alone doesn't clear it.
-
-**Default to `@salesforce/platform-sdk` for the fetch import**, not `@salesforce/sdk-data`. They were assumed interchangeable once entitled, but `@salesforce/sdk-data` was confirmed to silently 401 in at least one fully-entitled org while `@salesforce/platform-sdk` worked immediately with no other change (see gotcha #13's correction) — not yet root-caused why they diverge. A plain global `fetch()` still 401s regardless of package (use the SDK's authenticated fetch).
+**If every data call 401s, check gotcha #16 FIRST** (build baked in the wrong org's API version at compile time — the actual answer almost every time, regardless of what the symptom looks like). Only after ruling that out: gotcha #13 (the running user needs the **Agentforce entitlement** — a permission set backed by the *Agentforce Platform Developer and Admin* PSL, `sf org assign permset --name AgentforceDeveloperAndAdminTools`), gotcha #14 (`AppFrameworkPsl`, a separate license some orgs also require), and gotcha #15 (stale cached bundle after a redeploy). A plain global `fetch()` always 401s regardless of any of this — the SDK's authenticated fetch is required either way.
 
 Practical guidance:
 - Wrap all SDK calls behind **one thin data module** so the UI never imports the SDK directly — keeps components testable (mock the module) and the transport swappable.
