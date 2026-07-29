@@ -114,7 +114,9 @@ sf org assign permset --name AgentforceDeveloperAndAdminTools --target-org <alia
 ```
 The 401 and CSRF 404 clear **immediately** on the next reload — no code change, no redeploy.
 
-**Proof it's not code:** the exact same `sdk.fetch` code that 401'd before the assignment works after it. `sdk.fetch` from **either** `@salesforce/sdk-data` or `@salesforce/platform-sdk` works once entitled. (A plain global `fetch()` 401s regardless — the SDK's authenticated fetch is still required; see the Data access section in SKILL.md.)
+**Proof it's not code:** the exact same `sdk.fetch` code that 401'd before the assignment works after it — at least in the org (`suakhil`) this was originally diagnosed in. (A plain global `fetch()` 401s regardless — the SDK's authenticated fetch is still required; see the Data access section in SKILL.md.)
+
+**⚠️ Correction (2026-07-29):** "sdk.fetch works from either package once entitled" turned out not to hold universally. In a different org (PP2), `@salesforce/sdk-data`'s `sdk.fetch` kept 401ing even with the user fully entitled (both this PSL and #14's `AppFrameworkPsl` assigned, both verified) — switching the import to `@salesforce/platform-sdk` fixed it immediately, no other change. Not yet root-caused why the two packages diverge. **If entitlement checks out clean and the 401 still won't clear, try switching SDK packages before assuming something else is wrong** — see the Data access section in SKILL.md, now updated to recommend `@salesforce/platform-sdk` as the default rather than calling both equivalent.
 
 **Diagnose fast:** compare the *working* user's permission sets against the *failing* user's — the delta is the Agentforce entitlement:
 ```bash
