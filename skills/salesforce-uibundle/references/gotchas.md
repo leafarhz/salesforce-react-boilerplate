@@ -15,7 +15,7 @@ Jump from what you're seeing to the fix.
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
 | Beta app broke after Summer '26 GA | #12 (5 beta→GA breaking changes) |
-| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | #13 (user lacks the Agentforce entitlement — NOT a code bug); if that checks out, also try #14 (`AppFrameworkPsl`) |
+| App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale API version) | **Check #15 first** (stale cached bundle after a redeploy) — cheaper to rule out and can look identical to #13/#14. If a true hard refresh doesn't clear it, then #13 (Agentforce entitlement) and #14 (`AppFrameworkPsl`) |
 
 ## #1 — `<uiBundle>` is creation-only and silently stripped
 
@@ -139,3 +139,20 @@ sf org assign permset --name AppFrameworkPsl --target-org <alias>
 The 401 is the same symptom as gotcha #13 (Agentforce entitlement missing), so it's easy to stop diagnosing once `AgentforceDeveloperAndAdminTools` checks out — don't. If the 401 persists after confirming that permset is assigned and correct, check for `AppFrameworkPsl` too before assuming something else is wrong. Diagnose the same way as #13: compare a working user/org's full permission set list against the failing one — the delta names the gap directly, faster than guessing.
 
 **Not yet confirmed:** whether `AppFrameworkPsl` is required in every org, or only some (parallel to how gotcha #13's Agentforce PSL provisioning itself varies per sandbox). Treat both #13 and #14 as "check this too" rather than a fixed two-step checklist until this is verified across more orgs.
+
+**⚠️ Correction (same day):** in the incident that produced this gotcha, the 401 actually persisted for a different reason — **see #15**. The browser was still running a stale cached bundle (built and deployed *before* the permission fixes described here), so it's unclear whether assigning `AppFrameworkPsl` did anything at all in that specific case. The finding itself is real (the license genuinely has a hard 1-seat cap in that org, verified via `PermissionSetLicense`), but don't treat it as a confirmed fix for a 401 until you've also ruled out #15 — check #15 first, it's cheaper.
+
+## #15 — Persistent 401 after a redeploy: check for a stale cached bundle before touching permissions
+
+**The tell:** you redeploy the UIBundle (new code, new content-hashed JS/CSS filenames), reload the app, and it *still* shows the old UI/old behavior — not just old data, the actual old interface. If the rendered page doesn't reflect your latest change, the browser never loaded your new `index.html`/bundle at all, and no amount of server-side permission work will fix what you're seeing.
+
+**Root cause:** `index.html` (and the browser's cache of it) references the built JS/CSS by content-hashed filename. If the browser has a cached copy of the old `index.html`, every reload keeps requesting the old hash — which may 404 or, worse, still resolve if the old asset wasn't cleaned up — regardless of what's actually deployed org-side. A normal reload (or even what looks like a hard reload) doesn't always bypass this on the `.salesforce.app` domain.
+
+**Why this is easy to misdiagnose as gotcha #13/#14:** the symptom is identical — "renders, but every data call 401s." If the OLD bundle used a plain `fetch()` instead of the SDK's authenticated `sdk.fetch` (or any other code that's since been fixed in source), you'll see the exact same 401 pattern as a genuine entitlement gap, even after the entitlement is fixed — because the browser is still running the pre-fix code.
+
+**Fix:**
+1. Force a true cache bypass — an actual hard refresh (Cmd+Shift+R / Ctrl+Shift+R), or open the app in a private/incognito window, or clear site data for the `.salesforce.app` origin.
+2. Confirm you're now running the new bundle: check the Network tab for the JS asset filename and compare it to what's in the deployed `dist/assets/` folder.
+3. Only escalate to #13/#14 (permission/entitlement troubleshooting) if the 401 survives a *confirmed* fresh bundle load.
+
+**Diagnostic note for AI agents without browser access:** if you can't inspect the Network tab yourself, you can't tell #13/#14 apart from #15 by symptom alone — server-side checks (permission sets, licenses) can all come back clean while the real problem is sitting in the user's browser cache. Ask the user to try a hard refresh or incognito window *before* spending time on permission-set archaeology; it's the cheaper test and rules out a whole category of false leads.
