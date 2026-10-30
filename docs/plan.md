@@ -4,7 +4,7 @@
 
 **Goal:** Ship `leafarhz/salesforce-react-boilerplate` as an installable Claude Code plugin containing a full-lifecycle Salesforce React UIBundle skill plus the proven, genericized SFDX boilerplate.
 
-**Architecture:** One public repo that is simultaneously (a) a single-plugin Claude Code marketplace, (b) the plugin, and (c) the boilerplate. The plugin exposes one skill, `salesforce-uibundle`, whose lean `SKILL.md` routes to three reference docs. The boilerplate files are copied from the proven `rafaimaginelearning/sf-uibundle-boilerplate` repo and stripped of all internal org identifiers.
+**Architecture:** One public repo that is simultaneously (a) a single-plugin Claude Code marketplace, (b) the plugin, and (c) the boilerplate. The plugin exposes one skill, `salesforce-uibundle`, whose lean `SKILL.md` routes to three reference docs. The boilerplate files are copied from a proven internal boilerplate repo and stripped of all internal org identifiers.
 
 **Tech Stack:** Claude Code plugin format (`.claude-plugin/plugin.json` + `marketplace.json`), Markdown skills, SFDX metadata (API v67.0), Apex.
 
@@ -139,7 +139,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Run (uses `gh`, authenticated as leafarhz):
 ```bash
 cd ~/Documents/GitHome/SalesforceReactBoilerPlate
-SRC=rafaimaginelearning/sf-uibundle-boilerplate
+SRC=<internal-org>/<internal-boilerplate-repo>
 mkdir -p boilerplate/destructive \
   boilerplate/force-app/main/default/applications \
   boilerplate/force-app/main/default/uiBundles/MyApp \
@@ -599,6 +599,6 @@ Expected: prints the new PR URL.
 ## Notes for the implementer
 
 - `claude plugin validate` may not exist in every CLI build; the `jq empty` JSON checks are the required gate, the validator is a bonus.
-- Do not edit anything under the internal org path (`OneDrive-ImagineLearning/…`). All work is in `~/Documents/GitHome/SalesforceReactBoilerPlate`.
+- Do not edit anything under the employer-synced folder. All work is in `~/Documents/GitHome/SalesforceReactBoilerPlate`.
 - If `sf`/`objects` directories don't exist in a consuming project, that's fine — the boilerplate intentionally ships no `objects/`; step 3 of the runbook is a no-op when a project has no custom objects.
 ```

@@ -35,8 +35,9 @@ Run the verification gates — all must pass:
 claude plugin validate ./
 jq empty .claude-plugin/plugin.json .claude-plugin/marketplace.json
 
-# No internal identifiers anywhere (expect no output)
-grep -rinE 'IL Engineering|Imagine Learning' --exclude-dir=.git .
+# No internal identifiers anywhere (expect no output). The terms live in a local, git-ignored
+# .internal-terms file (one company / org alias / internal repo name per line), so they are never published.
+grep -rinIf .internal-terms --exclude=.internal-terms --exclude-dir=.git .
 
 # No 68.0 as a config version value (expect no output)
 grep -rnE '68\.0' --include='*.json' --include='*.xml' --exclude-dir=.git .

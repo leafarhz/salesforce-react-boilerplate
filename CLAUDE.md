@@ -40,8 +40,9 @@ docs/{design.md, plan.md}                         # how this repo was designed +
 ```bash
 claude plugin validate ./                         # plugin/marketplace schema
 jq empty .claude-plugin/plugin.json .claude-plugin/marketplace.json
-# No internal identifiers anywhere (expect no output / exit 1):
-grep -rinE 'PricingSyncUtility|IL Engineering|Imagine Learning' --exclude-dir=.git .
+# No internal identifiers anywhere (expect no output / exit 1). Terms come from the local,
+# git-ignored .internal-terms file (one per line), so they are never published:
+grep -rinIf .internal-terms --exclude=.internal-terms --exclude-dir=.git .
 # No 68.0 as a config version value (expect no output):
 grep -rnE '68\.0' --include='*.json' --include='*.xml' --exclude-dir=.git .
 ```
