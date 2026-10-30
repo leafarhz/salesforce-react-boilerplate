@@ -14,7 +14,7 @@ This is a **public, community** project. It must not carry internal org identifi
 
 - **GitHub repo:** `leafarhz/salesforce-react-boilerplate` (public)
 - **Owner account:** `leafarhz` (personal GitHub, NOT an internal org account)
-- **Local path:** `~/Documents/GitHome/SalesforceReactBoilerPlate` (outside any OneDrive-ImagineLearning sync)
+- **Local path:** `~/Documents/GitHome/SalesforceReactBoilerPlate` (outside any employer-synced folder)
 - **Default branch:** `main`
 
 ## Decisions (locked during brainstorming)
@@ -22,7 +22,7 @@ This is a **public, community** project. It must not carry internal org identifi
 1. **One repo, skill + boilerplate together** — a single clone gets everything; the skill points at the local `boilerplate/` directory.
 2. **Full lifecycle guide** — the skill covers scaffold, deploy, make-visible, debug.
 3. **Both distribution paths** — installable as a Claude Code plugin/marketplace AND documented for manual copy into `.claude/skills/`.
-4. **Boilerplate sourced from the existing proven repo** — files copied from `github.com/rafaimaginelearning/sf-uibundle-boilerplate`, then cleaned/genericized for public release.
+4. **Boilerplate sourced from the existing proven repo** — files copied from an existing, proven internal boilerplate repo, then cleaned/genericized for public release.
 
 ## Layout
 
@@ -92,7 +92,7 @@ Progressive-disclosure design — a lean `SKILL.md` entry point that routes to f
 
 ## Content source & genericization
 
-- **Boilerplate files:** copied from `rafaimaginelearning/sf-uibundle-boilerplate` (confirmed present: `README.md`, `sfdx-project.json`, `destructive/*`, and five `force-app` metadata files), then reviewed for any internal specifics.
+- **Boilerplate files:** copied from the internal boilerplate repo (confirmed present: `README.md`, `sfdx-project.json`, `destructive/*`, and five `force-app` metadata files), then reviewed for any internal specifics.
 - **Reference docs:** distilled from internal notes. **All internal org identifiers are stripped** before publishing — no real app names, project codenames, or decision-table API names. Examples in the docs use neutral placeholders (`MyApp`, `MyObject__c`, `My_Decision_Table`).
 
 ## Distribution details
@@ -102,7 +102,7 @@ Progressive-disclosure design — a lean `SKILL.md` entry point that routes to f
 
 ## Out of scope (YAGNI)
 
-- Migrating/mirroring the boilerplate out of the `rafaimaginelearning` org.
+- Migrating/mirroring the boilerplate out of the internal source repo.
 - Bundling actual React app source in the boilerplate (the CLI generates it).
 - Production deploy support (Multi-Framework is sandbox/scratch only in this Beta).
 

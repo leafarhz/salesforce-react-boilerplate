@@ -1,0 +1,25 @@
+<template>
+    <template lwc:if={error}>
+        <div class="slds-box slds-theme_error slds-m-bottom_x-small">
+            <p class="slds-text-heading_small">My App could not load</p>
+            <p class="slds-text-body_small">{error.message}</p>
+            <p class="slds-text-body_small">Phase: {error.phase} · Code: {error.code}</p>
+        </div>
+    </template>
+    <template lwc:elseif={loading}>
+        <div class="loading slds-text-body_small slds-text-color_weak">
+            <lightning-spinner alternative-text="Loading My App" size="small" variant="brand"></lightning-spinner>
+            Loading My App…
+        </div>
+    </template>
+    <lightning-ui-embedding
+        lwc:ref="embedding"
+        class="app-embed"
+        sandbox="allow-popups"
+        shell-title="My App"
+        src={embeddingUrl}
+        props={hostProps}
+        onapprequest={handleRequest}
+        onappnavigate={handleNavigate}>
+    </lightning-ui-embedding>
+</template>

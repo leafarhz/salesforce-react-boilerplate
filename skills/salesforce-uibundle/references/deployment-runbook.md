@@ -11,7 +11,7 @@ Since Summer '26 GA, `<alias>` can be a **production** org as well as a sandbox/
 
 ```bash
 grep orgAlias force-app/main/default/uiBundles/MyApp/vite.config.ts
-# Must show your actual target org's alias, e.g. orgAlias: 'preprod2' — a bare
+# Must show your actual target org's alias, e.g. orgAlias: 'my-uat-sandbox' — a bare
 # salesforce() with no orgAlias resolves to the BUILDING MACHINE's global CLI
 # default target-org instead, unrelated to <alias> below.
 

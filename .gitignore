@@ -25,3 +25,5 @@ CLAUDE.local.md
 .env
 .env.*
 !.env.example
+# local list of internal names the publish check greps for (never committed)
+.internal-terms

@@ -1,0 +1,18 @@
+:host {
+    display: block;
+}
+
+/* let the guest's auto-resize drive the height instead of lightning-ui-embedding's default height: 100% */
+.app-embed {
+    display: block;
+    height: auto;
+}
+
+.loading {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding-left: 2.5rem;
+}

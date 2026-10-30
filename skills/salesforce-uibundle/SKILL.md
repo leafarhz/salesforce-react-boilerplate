@@ -1,6 +1,6 @@
 ---
 name: salesforce-uibundle
-description: Use when building, deploying, or debugging a Salesforce React UIBundle (Multi-Framework) app — scaffolding a new UIBundle project, deploying it to an org, making it appear in the App Launcher, or troubleshooting issues like the app not showing, "No Items", stripped uiBundle fields, field-access errors, or INVALID_SESSION_ID. Covers the full lifecycle end to end.
+description: Use when building, deploying, or debugging a Salesforce React UIBundle (Multi-Framework) app — scaffolding a new UIBundle project, deploying it to an org, making it appear in the App Launcher, or troubleshooting issues like the app not showing, "No Items", stripped uiBundle fields, field-access errors, or INVALID_SESSION_ID — or embedding the React app on a Lightning record/home page with lightning-ui-embedding (Microfrontends: host LWC, blank embedded panel, handshake, Trusted URLs). Covers the full lifecycle end to end.
 ---
 
 # Salesforce React UIBundle — Full Lifecycle
@@ -18,7 +18,7 @@ Salesforce Multi-Framework lets you build native React apps that deploy to the A
 - The `<uiBundle>` field on a CustomApplication is **creation-only** — deploy it exactly once as a create.
 - **`vite.config.ts` MUST pass an explicit `orgAlias` to the `salesforce()` plugin call — never leave it bare.** Without it, the plugin resolves the API version it bakes into the build from whatever org is the *building machine's* global CLI default (`sf config get target-org`), completely unrelated to your actual target org. This is THE most common cause of a persistent 401 that survives every other fix — see gotcha #16. Set it during scaffolding, not after debugging it.
 - **Data + auth are handled by the platform Data SDK** (`@salesforce/sdk-data` — see "Data access" below for why, despite Salesforce's own beta→GA docs suggesting `@salesforce/platform-sdk`) — no OAuth/token management inside the app.
-- **GA limitation:** React apps surface as **standalone App Launcher apps**. Lightning App Builder drag-drop placement and embedding externally-hosted React components are **not yet supported** (roadmap). If you need a component embedded on a record/home page, that's still LWC territory today.
+- **Embedding on a record/home page is possible now** via Microfrontends: a thin host LWC renders `<lightning-ui-embedding>` and frames your UIBundle. Embedding *externally hosted* apps is GA; embedding a *Salesforce-hosted UIBundle* is **Beta** (GA targeted mid-November 2026). You still can't drag the UIBundle itself onto a page in App Builder — you place the host LWC. See **[references/embedding.md](references/embedding.md)**.
 
 ## Lifecycle
 
@@ -36,14 +36,17 @@ Follow **[references/deployment-runbook.md](references/deployment-runbook.md)** 
 ### 3. Make it visible
 Follow **[references/visibility-chain.md](references/visibility-chain.md)**: grant `applicationVisibilities` + `classAccesses` + object/field permissions in the Permission Set, assign it, then open the app on the `.salesforce.app` domain.
 
-### 4. Debug
+### 4. Embed on a record page (optional)
+Follow **[references/embedding.md](references/embedding.md)**: SDK `@salesforce/platform-sdk` 12.x with `import '@salesforce/platform-sdk/ui-embedding'` as the guest's first line, the `myAppHost` LWC from `boilerplate/` (ready/error events, props, Apex via request/response events), the CustomApplication, and **two** frame-src Trusted URLs (`*.salesforce.app`, `*.lightning.force.com`). An embedded guest has **no direct org data access** — the host calls Apex for it.
+
+### 5. Debug
 Start from the symptom index in **[references/gotchas.md](references/gotchas.md)** — map the error message or behavior to the numbered fix.
 
 ## Data access (React → Salesforce)
 
 The React bundle reads and writes Salesforce data through the **platform Data SDK**. Auth is automatic: the user's Salesforce session (on the `.salesforce.app` domain) is used under the platform security/governance model, so there is **no OAuth flow, token storage, or CORS setup** inside the app (unlike a static-resource or externally-hosted React app).
 
-**Use `@salesforce/sdk-data` for `createDataSDK()`, not `@salesforce/platform-sdk`.** Every proven working reference app this skill has verified uses `sdk-data` with zero options and a plain relative-path `sdk.fetch(path)` — no `basePath` override, no absolute-URL workaround, nothing. `platform-sdk` is what Salesforce's own beta→GA docs suggest migrating to, but it pulls in a heavier analytics/o11y chunk for no benefit here, and it's easy to end up down a debugging rabbit hole assuming it's the "more correct" choice when it isn't. (Whichever package you pick, gotcha #16 — the build baking in the wrong org's API version — affects both identically; picking `sdk-data` doesn't protect you from that, only setting `orgAlias` does.)
+**Use `@salesforce/sdk-data` for `createDataSDK()`, not `@salesforce/platform-sdk`** — *except when the app is embedded on a page*: embedding needs `@salesforce/platform-sdk` ≥ 12 for its `ui-embedding` bootstrap (gotcha #17), and then `createDataSDK()` from the same package serves the full-page mode. Every proven working reference app this skill has verified uses `sdk-data` with zero options and a plain relative-path `sdk.fetch(path)` — no `basePath` override, no absolute-URL workaround, nothing. `platform-sdk` is what Salesforce's own beta→GA docs suggest migrating to, but it pulls in a heavier analytics/o11y chunk for no benefit here, and it's easy to end up down a debugging rabbit hole assuming it's the "more correct" choice when it isn't. (Whichever package you pick, gotcha #16 — the build baking in the wrong org's API version — affects both identically; picking `sdk-data` doesn't protect you from that, only setting `orgAlias` does.)
 
 The SDK gives three things:
 - **GraphQL** — `sdk.graphql<TData, TVariables>({ query, variables })` is a single callable (NOT separate `.query()`/`.mutate()` methods — that's `platform-sdk`'s shape, not `sdk-data`'s; check which package's type signature you're actually coding against, don't assume). Same UI API GraphQL backend LWC uses (Relay `edges → node` shape; scalars wrapped as `{ value: … }`).

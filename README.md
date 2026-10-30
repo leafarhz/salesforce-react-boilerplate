@@ -8,10 +8,14 @@ Multi-Framework (**GA as of Summer '26**; announced TDX 2026) lets you build nat
 
 | Path | What it is |
 | --- | --- |
-| `skills/salesforce-uibundle/` | The Claude skill — full-lifecycle guide + symptom-indexed gotchas |
+| `skills/salesforce-uibundle/` | The Claude skill — full-lifecycle guide + symptom-indexed gotchas, including embedding the app on a record page (Microfrontends) |
 | `boilerplate/` | Proven SFDX metadata scaffolding (CustomApplication, UIBundle, Permission Set, etc.) |
 | `.claude-plugin/` | Plugin + marketplace manifests for one-command install |
 | `docs/` | Design spec and background |
+
+## Embedding on a record page
+
+Besides the App Launcher, a UIBundle can be embedded on a Lightning record/home page with `<lightning-ui-embedding>` (Microfrontends; Beta for Salesforce-hosted bundles, GA targeted mid-November 2026). The skill's `references/embedding.md` covers the guest bootstrap, the host LWC (`boilerplate/.../lwc/myAppHost`), Apex request/response events, Trusted URLs, server/UX guardrails and a troubleshooting table. Credit: patterns verified against Salesforce's [trailheadapps/multiframework-recipes](https://github.com/trailheadapps/multiframework-recipes).
 
 ## Install the skill
 
