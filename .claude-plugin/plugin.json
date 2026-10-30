@@ -1,7 +1,7 @@
 {
   "name": "salesforce-react-boilerplate",
   "displayName": "Salesforce React UIBundle Kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Full-lifecycle guide and boilerplate for building Salesforce React UIBundle (Multi-Framework) apps — scaffold, deploy, make visible, and debug the known gotchas.",
   "author": {
     "name": "Rafael Hernandez",

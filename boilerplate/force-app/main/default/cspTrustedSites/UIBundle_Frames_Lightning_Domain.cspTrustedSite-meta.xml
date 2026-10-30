@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CspTrustedSite xmlns="http://soap.sforce.com/2006/04/metadata">
+    <context>LEX</context>
+    <description>With UIBundle_Frames_Salesforce_App: the org Lightning domain an embedded UIBundle frames during session hand-off.</description>
+    <endpointUrl>https://*.lightning.force.com</endpointUrl>
+    <isActive>true</isActive>
+    <isApplicableToConnectSrc>false</isApplicableToConnectSrc>
+    <isApplicableToFontSrc>false</isApplicableToFontSrc>
+    <isApplicableToFrameSrc>true</isApplicableToFrameSrc>
+    <isApplicableToImgSrc>false</isApplicableToImgSrc>
+    <isApplicableToMediaSrc>false</isApplicableToMediaSrc>
+    <isApplicableToStyleSrc>false</isApplicableToStyleSrc>
+</CspTrustedSite>

@@ -20,8 +20,10 @@ Invoke the skill explicitly with `/salesforce-react-boilerplate:salesforce-uibun
 .claude-plugin/{plugin.json, marketplace.json}   # plugin + single-plugin marketplace
 skills/salesforce-uibundle/
   SKILL.md                                        # lean entry point; routes to references/
-  references/{deployment-runbook, gotchas, visibility-chain}.md
-boilerplate/                                      # 9 SFDX metadata files, genericized (API v67.0)
+  references/{deployment-runbook, gotchas, visibility-chain, embedding}.md
+boilerplate/                                      # SFDX metadata files, genericized (API v67.0), incl. the
+                                                  # record-page embedding kit: lwc/myAppHost, MyAppEmbedController(+Test),
+                                                  # cspTrustedSites/UIBundle_Frames_*
 docs/{design.md, plan.md}                         # how this repo was designed + built
 ```
 
@@ -30,7 +32,7 @@ docs/{design.md, plan.md}                         # how this repo was designed +
 - **Salesforce API version is `67.0` everywhere.** `68.0` returns "Invalid version specified." It may appear in prose *warning against* its use (gotcha #8), but never as a version value in any `.json`/`.xml`.
 - **No internal/employer identifiers, ever.** This is a public repo. The knowledge was distilled and **genericized** from private work — examples use neutral placeholders only: `MyApp`, `MyObject__c` / `MyCustomObject__c`, `MyField__c`, `My_Decision_Table`, `RefreshMyDecisionTable`. Before publishing any content sourced from internal notes, strip real app names, project codenames, team names, and decision-table API names.
 - **Skill design is progressive disclosure:** keep `SKILL.md` short and route detail into `references/*.md`. The `description:` frontmatter is tuned for auto-triggering — change it deliberately.
-- **Boilerplate must stay self-consistent** for copy-paste use: the CustomApplication `<uiBundle>c__MyApp</uiBundle>` must match the UIBundle DeveloperName, and the permission set's `classAccesses` must reference the class that actually ships (`MyAppSyncQueueable`).
+- **Boilerplate must stay self-consistent** for copy-paste use: the CustomApplication `<uiBundle>c__MyApp</uiBundle>` must match the UIBundle DeveloperName, and the permission set's `classAccesses` must reference the classes that actually ship (`MyAppSyncQueueable`, `MyAppEmbedController`), and `myAppHost` must import a method that exists (`MyAppEmbedController.handleRequest`).
 - **Semver.** Bump `version` in *both* `plugin.json` and `marketplace.json` together.
 
 ## Verifying changes

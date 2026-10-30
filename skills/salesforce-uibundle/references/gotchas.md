@@ -15,6 +15,12 @@ Jump from what you're seeing to the fix.
 | `The decision table API Name is invalid` | #10 (use DeveloperName, not display label) |
 | NamedCredential deploy fails cryptically | #7 (`<endpoint>` + `<principalType>` required; no `<name>`) |
 | Beta app broke after Summer '26 GA | #12 (5 beta→GA breaking changes) |
+| **Embedded** on a record page: blank space where the panel should be (no content, maybe it even resizes) | #17 (handshake never completes: SDK < 12 or `ui-embedding` import not first) |
+| Embedded panel: `/app/c__MyApp` says **"Page doesn't exist"** | #18 (no CustomApplication / `<uiBundle>` for the bundle) |
+| Works full-page, empty/blocked when **embedded** | #19 (Trusted URLs `*.salesforce.app` + `*.lightning.force.com`, frame-src) |
+| Embedded app loads but its data calls fail | #20 (embedded guests have no direct org data — go through the host) |
+| `Too many SOQL queries: 101` on a bulk/"check many records" action | #21 (batch per request) |
+| Build/SDK resolution broken after copying another bundle's `node_modules` | #22 (fresh `npm install`) |
 | App **renders** but every data call is **401** (often + a `.../ui-api/session/csrf` **404** on a stale-looking API version like `v50.0`) | **Check #16 FIRST** (build baked in the wrong org's API version — the actual answer almost every time this symptom shows up with a wrong-looking version number). Only after ruling that out: #15 (stale cached bundle), #13 (Agentforce entitlement), #14 (`AppFrameworkPsl`) |
 
 ## #1 — `<uiBundle>` is creation-only and silently stripped
@@ -197,3 +203,27 @@ grep -o 'v67\.0' dist/assets/*.js   # or your target org's actual API version
 ```
 
 **Why the reference apps (this boilerplate's own proven examples) never hit this:** they either had their own local `.sf/config.json` pinning the right org, or the building machine's global default happened to already be correct at the time they were last built — not because they were somehow immune. Don't assume "it works elsewhere" means the plugin call itself was safe; check whether `orgAlias` was actually set explicitly before trusting a reference app as proof this gotcha doesn't apply.
+
+## #17 — Embedded panel stays blank: the guest never completed the handshake
+
+`<lightning-ui-embedding>` keeps the frame hidden until the guest answers its handshake (`sf-embedding.component.ready`). The guest answers only if `import '@salesforce/platform-sdk/ui-embedding'` runs **first** (top of `main.tsx`, before React renders) and the SDK is **12.x** — 10.x has no `ui-embedding` entry point at all, so no amount of host fixing helps. Telltale: the empty area may even change height, yet shows nothing. Fix the guest, then make the host listen for `sf-embedding.component.error` so the next failure names itself (`{ phase, code, message }`) instead of staying blank. See references/embedding.md.
+
+## #18 — Embedded `src` → "Page doesn't exist"
+
+The bundle has no `/app/c__MyApp` route until a CustomApplication with `<uiBundle>c__MyApp</uiBundle>` exists (and `<uiBundle>` survived — #1). Open the URL full-page first: if it fails there, it's this; if it works there, it's #17 or #19.
+
+## #19 — Works full-page, blank/blocked when embedded: Trusted URLs
+
+Lightning's CSP must allow framing both `https://*.salesforce.app` (the bundle) **and** `https://*.lightning.force.com` (the session hand-off the frame performs). Add both as Trusted URLs with **frame-src** (`boilerplate/.../cspTrustedSites/`), then hard-reload — CSP is cached.
+
+## #20 — Embedded guest can't load data
+
+An embedded guest has no direct org data access. Pass small context as host `props` (fresh plain object; read with `getViewSDK().getUiState()`), and fetch everything else through the host: guest dispatches `apprequest` → host calls `@AuraEnabled` Apex → host dispatches `appresponse` on the embedding element. Send plain JSON (`JSON.parse(JSON.stringify(apexResult))`) — Apex results are read-only proxies that can't cross the frame. Full-page mode can keep using `createDataSDK().fetch()` to Apex REST.
+
+## #21 — `Too many SOQL queries: 101` on "check many records" actions
+
+Re-running real business logic for 50 records in one request used 97/100 queries (triggers and flows on touched records count too). Send batches of ~10 per request from the guest and aggregate client-side — each request gets fresh governor limits — and show progress + a Stop button.
+
+## #22 — Don't copy another bundle's `node_modules`
+
+Copying a working bundle's `node_modules` into a new bundle can leave broken symlinked packages (`@salesforce/*` resolving to nothing). Copy config files only, delete `node_modules` and the lockfile, and run `npm install`.

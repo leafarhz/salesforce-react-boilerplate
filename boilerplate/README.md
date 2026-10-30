@@ -312,6 +312,20 @@ grep -o 'v67\.0' force-app/main/default/uiBundles/MyApp/dist/assets/*.js
 
 ---
 
+## Embedding on a Record Page (Microfrontends)
+
+To show the app inside a Lightning record page instead of (or as well as) the App Launcher, use the embedding kit in this folder — full guide in the skill's `references/embedding.md`:
+
+| File | Purpose |
+|------|---------|
+| `lwc/myAppHost/` | Host LWC with `<lightning-ui-embedding>`: computes the `.salesforce.app` URL per org, passes `props`, shows a spinner until `sf-embedding.component.ready` and the reason on `sf-embedding.component.error`, answers the guest's `apprequest` events via Apex |
+| `classes/MyAppEmbedController.cls` (+ Test) | The Apex the host calls — with the access check, governor and rollback guardrails documented inline |
+| `cspTrustedSites/UIBundle_Frames_*` | Trusted URLs with frame-src for `https://*.salesforce.app` and `https://*.lightning.force.com` — both are required |
+
+Guest side (in your React app): `@salesforce/platform-sdk` 12.x and `import '@salesforce/platform-sdk/ui-embedding'` as the **first line** of `main.tsx`, or the panel stays blank.
+
+---
+
 ## Debugging Commands
 
 ```bash
